@@ -42,14 +42,10 @@ export default function Security() {
         Single sign-on (SSO)
       </Title>
 
-      {(isCloud() && isBusiness) || (!isCloud() && hasLicenseKey) ? (
-        <>
-          <EnforceSso />
-          <Divider my="lg" />
-          <CreateSsoProvider />
-          <Divider size={0} my="lg" />
-        </>
-      ) : null}
+      <EnforceSso />
+      <Divider my="lg" />
+      <CreateSsoProvider />
+      <Divider size={0} my="lg" />
 
       <SsoProviderList />
     </>

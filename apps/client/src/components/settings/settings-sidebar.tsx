@@ -93,10 +93,7 @@ const groupedData: DataGroup[] = [
         label: "Security & SSO",
         icon: IconLock,
         path: "/settings/security",
-        isCloud: true,
-        isEnterprise: true,
-        isAdmin: true,
-        showDisabledInNonEE: true,
+        isAdmin: true
       },
       { label: "Groups", icon: IconUsersGroup, path: "/settings/groups" },
       { label: "Spaces", icon: IconSpaces, path: "/settings/spaces" },

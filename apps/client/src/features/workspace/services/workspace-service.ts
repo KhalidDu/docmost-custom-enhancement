@@ -109,3 +109,8 @@ export async function getAppVersion(): Promise<IVersion> {
   return req.data;
 }
 
+export async function createUserDirectly(data: ICreateInvite & { name: string; password: string }) {
+  const req = await api.post("/workspace/invites/create-directly", data);
+  return req.data;
+}
+

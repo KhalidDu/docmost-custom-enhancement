@@ -211,6 +211,27 @@ export class WorkspaceController {
   }
 
   @HttpCode(HttpStatus.OK)
+  @Post('invites/create-directly')
+  async createUserDirectly(
+    @Body() inviteUserDto: InviteUserDto & { name: string; password: string },
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    const ability = this.workspaceAbility.createForUser(user, workspace);
+    if (
+      ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Member)
+    ) {
+      throw new ForbiddenException();
+    }
+
+    return this.workspaceInvitationService.createUserDirectly(
+      inviteUserDto,
+      workspace,
+      user,
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
   @Post('invites/resend')
   async resendInvite(
     @Body() revokeInviteDto: RevokeInviteDto,

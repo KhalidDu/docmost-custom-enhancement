@@ -351,6 +351,83 @@ export class WorkspaceInvitationService {
       .execute();
   }
 
+  async createUserDirectly(
+    inviteUserDto: InviteUserDto & { name: string; password: string },
+    workspace: Workspace,
+    authUser: User,
+  ): Promise<void> {
+    const { emails, role, groupIds, name, password } = inviteUserDto;
+    
+    // Only support single user creation for now
+    const email = emails[0];
+    
+    try {
+      await executeTx(this.db, async (trx) => {
+        // Check if user already exists
+        const existingUser = await this.db
+          .selectFrom('users')
+          .select(['email'])
+          .where('users.email', '=', email)
+          .where('users.workspaceId', '=', workspace.id)
+          .executeTakeFirst();
+        
+        if (existingUser) {
+          throw new BadRequestException('User already exists');
+        }
+        
+        // Create new user directly
+        const newUser = await this.userRepo.insertUser(
+          {
+            name: name,
+            email: email,
+            emailVerifiedAt: new Date(),
+            password: password,
+            role: role,
+            invitedById: authUser.id,
+            workspaceId: workspace.id,
+            hasGeneratedPassword: true,
+          },
+          trx,
+        );
+        
+        // Add user to default group
+        await this.groupUserRepo.addUserToDefaultGroup(
+          newUser.id,
+          workspace.id,
+          trx,
+        );
+        
+        // Add user to specified groups if any
+        if (groupIds && groupIds.length > 0) {
+          const validGroups = await trx
+            .selectFrom('groups')
+            .select(['id', 'name'])
+            .where('groups.id', 'in', groupIds)
+            .where('groups.workspaceId', '=', workspace.id)
+            .execute();
+          
+          if (validGroups && validGroups.length > 0) {
+            const groupUsersToInsert = validGroups.map((group: Partial<Group>) => ({
+              userId: newUser.id,
+              groupId: group.id,
+            }));
+            
+            await trx
+              .insertInto('groupUsers')
+              .values(groupUsersToInsert)
+              .onConflict((oc) => oc.columns(['userId', 'groupId']).doNothing())
+              .execute();
+          }
+        }
+      });
+    } catch (err) {
+      this.logger.error(`createUserDirectly - ${err}`);
+      throw new BadRequestException(
+        'An error occurred while creating the user.',
+      );
+    }
+  }
+
   async getInvitationLinkById(
     invitationId: string,
     workspace: Workspace,

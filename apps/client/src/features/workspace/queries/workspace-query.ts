@@ -11,6 +11,7 @@ import {
   getPendingInvitations,
   getWorkspaceMembers,
   createInvitation,
+  createUserDirectly,
   resendInvitation,
   revokeInvitation,
   getWorkspace,
@@ -117,6 +118,28 @@ export function useCreateInvitationMutation() {
     mutationFn: (data) => createInvitation(data),
     onSuccess: (data, variables) => {
       notifications.show({ message: t("Invitation sent") });
+      queryClient.refetchQueries({
+        queryKey: ["invitations"],
+      });
+    },
+    onError: (error) => {
+      const errorMessage = error["response"]?.data?.message;
+      notifications.show({ message: errorMessage, color: "red" });
+    },
+  });
+}
+
+export function useCreateUserDirectlyMutation() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, ICreateInvite & { name: string; password: string }>({
+    mutationFn: (data) => createUserDirectly(data),
+    onSuccess: (data, variables) => {
+      notifications.show({ message: t("User created successfully") });
+      queryClient.refetchQueries({
+        queryKey: ["workspaceMembers"],
+      });
       queryClient.refetchQueries({
         queryKey: ["invitations"],
       });
